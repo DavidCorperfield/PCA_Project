@@ -3,7 +3,7 @@
 
 //num from 0-255 for thresholding black and white in the print_example
 //0 is white 255 is black
-#define blackwhite_threshold 10
+#define blackwhite_threshold 20
 
 uint8_t * get_data(char *filename){
 	//make sure int is of size 4, otherwise this parser will not work
@@ -12,7 +12,7 @@ uint8_t * get_data(char *filename){
 	FILE * fp;
 	char * file_dir = (char*)malloc(snprintf(NULL, 0, "%s%s", data_dir, filename) + 1);
 	sprintf(file_dir, "%s%s", data_dir, filename);
-	printf("file to be opened: %s\n",file_dir);
+	printf("file to be opened: %s .\n",file_dir);
 	fp = fopen(file_dir,"rb");
 	if(!fp)
 		printf("bad filename\n");
@@ -59,16 +59,17 @@ uint8_t * get_data(char *filename){
 	}
 }
 
-void print_example(int img_num, uint8_t * images, uint8_t * labels){
+void print_example(int img_num, uint8_t *images, uint8_t *labels){
 	int i,j;
 	printf("\nthe character is: %u", labels[img_num]);
 	int start_index = img_num*28*28;
-	printf("\nprinting image\n");
+	printf("\nprinting image !\n");
 	for(i = 0; i < 28; i++){
 		for(j = 0; j < 28; j++){
 			if(images[28*i + j + start_index] < blackwhite_threshold)
 				printf(" ");
 			else
+
 				printf("X");
 		}
 		printf("\n");
