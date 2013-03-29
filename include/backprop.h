@@ -10,5 +10,5 @@
 
 #define LEARNING_RATE 0.0005
 
-__global__ void backprop_layer(float *output, float *weights, float *calculated_input, int num_weights, int num_neurons);
-
+__global__ void backprop_output_layer(float *layer_input, float *actual_output, float *desired_output, float *weights, float *error_prev, int num_weights, int num_neurons){
+__global__ void backprop_layer(float *input_error, float *weights, float *calculated_input, int num_weights, int num_neurons);

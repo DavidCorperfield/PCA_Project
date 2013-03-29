@@ -15,6 +15,9 @@ test_parse:
 	
 test_feedforward:
 	nvcc $(SOURCE) ./debug/test_feed_forward.cu -o feed_forward -I $(CUDA_INCLUDE)
+	
+test_backprop:
+	nvcc $(SOURCE) ./debug/test_backprop.cu -o backprop.o -I $(CUDA_INCLUDE)
 
 headers:
 	gcc $(INCLUDE)
