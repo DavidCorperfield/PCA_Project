@@ -1,7 +1,8 @@
 #include "../include/feed_forward.h"
 
+//this function will determine the output of a signle layer in the network
 __global__ void 
-eval_layer(float *input, float *weights, float *output, int num_weights, int num_neurons)
+eval_layer(int num_weights, int num_neurons, float *input, float *weights, float *output)
 {
     
     //each block will correspond to one neuron

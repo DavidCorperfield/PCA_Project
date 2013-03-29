@@ -68,7 +68,7 @@ int main(int argc, char **argv){
         printf("Device %d has compute capability %d.%d.\n", device, deviceProp.major, deviceProp.minor);
     }    
     if(deviceProp.major == 1){
-        eval_layer<<<512, 512>>>(d_input, d_weights, d_output, 512, 512);
+        eval_layer<<<512, 512>>>(512, 512, d_input, d_weights, d_output);
     }
     else{
         //eval_layer<<<(int)MAX_NUM_NEURONS, (int)MAX_NUM_WEIGHTS>>>(d_input, d_weights, d_output);
