@@ -23,7 +23,7 @@ int main(int argc, char **argv){
     }
 
     for(int i = 0; i < MAX_NUM_NEURONS*MAX_NUM_WEIGHTS; i++){
-        h_weights[i] = 0.001953125f;
+        h_weights[i] = 0.001953125;
     }
    
     //allocate vectors on the device
@@ -54,8 +54,8 @@ int main(int argc, char **argv){
     printf("The number of weights is : %i\n", (int)MAX_NUM_WEIGHTS);
     //evaluate the test layer   
     
-   for(int i = 0; i < 20; i++){
-       h_output[i] = 12;
+   for(int i = 0; i < MAX_NUM_NEURONS; i++){
+       h_output[i] = 0;
     }
     error = cudaMemcpy(d_output, h_output, size_neurons, cudaMemcpyHostToDevice);
     
@@ -68,7 +68,7 @@ int main(int argc, char **argv){
         printf("Device %d has compute capability %d.%d.\n", device, deviceProp.major, deviceProp.minor);
     }    
     if(deviceProp.major == 1){
-        eval_layer<<<512, 512>>>(512, 512, d_input, d_weights, d_output);
+        eval_layer<<<512,512>>>(512, 512, d_input, d_weights, d_output);
     }
     else{
         //eval_layer<<<(int)MAX_NUM_NEURONS, (int)MAX_NUM_WEIGHTS>>>(d_input, d_weights, d_output);
@@ -79,7 +79,7 @@ int main(int argc, char **argv){
     //read back the output values from the layer
     cudaMemcpy(h_output, d_output, size_neurons, cudaMemcpyDeviceToHost);  
       
-    for(int i = 0; i < 20; i++){
+    for(int i = 300; i < 320;i++){
         printf("test: %f\n" , h_output[i]);
     }
     cudaFree(d_output);cudaFree(d_input);cudaFree(d_weights);

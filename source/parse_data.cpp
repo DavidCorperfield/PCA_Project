@@ -75,3 +75,4 @@ void print_example(int img_num, uint8_t *images, uint8_t *labels){
 		printf("\n");
 	}
 }
+

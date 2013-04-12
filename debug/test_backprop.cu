@@ -115,7 +115,7 @@ int main(int argc, char **argv){
         printf("error_prev: %f\n" , h_error_prev[i]);
     }
     
-    for(int i = 0; i < 20; i++){
+    for(int i = 0; i < 10; i++){
         printf("weights: %f\n" , h_weights[i]);
     }
     
