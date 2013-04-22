@@ -4,7 +4,7 @@
 #include <cuda.h>
 #include "parse_data.h"
 
-static const float LEARNING_RATE = 0.05;
+static const float LEARNING_RATE = 0.0005;
 
 __global__ void backprop_output_layer(int num_weights, int num_neurons, float *layer_input, float *actual_output, float *desired_output, 
                                     float *weights, float *error_prev);//outputs, weights is an input and output

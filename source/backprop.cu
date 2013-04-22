@@ -100,7 +100,7 @@ backprop_network(int num_threads, int num_layers, int num_weights, int num_neuro
                                     float *weights)//output of the function
 {    
     //make a pointer for the output layer outputs
-   // float *actual_output = (float*)(outputs + (num_layers-1)*MAX_NUM_NEURONS);
+    //float *actual_output = (float*)(outputs + (num_layers-1)*MAX_NUM_NEURONS);
     //each block will correspond to one neuron
     int neuron_index = blockIdx.x;
     //each thread will correspond to a weight of a neuron
@@ -112,43 +112,50 @@ backprop_network(int num_threads, int num_layers, int num_weights, int num_neuro
     //if we dont have enough threads for each weight, must make another index
     if(num_threads < num_weights){
         weight_index2 = weight_index + num_threads;
-    }
-    int weights_per_layer = num_weights*num_neurons;
-    
-    
+    }    
     //index for each weight into the cumulative weights array for the output layer
-    int neuron_weight_index = (num_layers-1)*weights_per_layer + neuron_index*num_weights + weight_index;
-    int neuron_weight_index2 = (num_layers-1)*weights_per_layer + neuron_index*num_weights + weight_index2;
+    int neuron_weight_index = (num_layers-1)*num_weights*num_neurons + neuron_index*num_weights + weight_index;
     int outputs_index = (num_layers-1)*num_neurons + neuron_index;
     //only used for inner layers
     int inputs_index = 0;
     if(weight_index < num_weights and neuron_index < num_neurons){
         /************Backprop the outer layer of the network*******************/
-        if(neuron_index < NUM_OUTPUT_NEURONS){
+        if(neuron_index < NUM_OUTPUT_NEURONS and weight_index == 0){
             //calculate the error for each neuron and store a value for each weight
             error[neuron_index] = outputs[outputs_index] - desired_output[neuron_index];
             //calculate partial derivative error
             error[neuron_index] = (1 - outputs[outputs_index]*outputs[outputs_index]) * error[neuron_index];
-            //make a copy of the error before  it is corrupted so that we can calculate the error_prev
-            weight_error_reduce[weight_index] = error[weight_index];
-            //make additional copies if we didnt have enough threads
-            if(weight_index2 && weight_index2 < num_weights){          
-                weight_error_reduce[weight_index2] = error[weight_index2];
+            if(error[neuron_index] == 0){
+                //error[neuron_index] = 0.1;
             }
+        }
+        //previous layer will only have 10 weights for all neurons leading to output
+        if(neuron_index < NUM_OUTPUT_NEURONS){
+            //make a copy of the error before  it is corrupted so that we can calculate the error_prev
+            weight_error_reduce[weight_index] = error[neuron_index];
+            //make additional copies if we didnt have enough threads
+            if(weight_index2 && weight_index2 < NUM_OUTPUT_NEURONS){          
+                weight_error_reduce[weight_index2] = error[neuron_index];
+            }
+            
+            //need to use outputs from the previous layer to calculate weight change amount
+            outputs_index = (num_layers-2)*num_neurons + neuron_index;
             /*calculate the change in the weights for this output layer*/
             //calcuate final error for finding the weight change amount
             error[neuron_index] = outputs[outputs_index]*error[neuron_index];
             //re-adjust weights for the current layer
             weights[neuron_weight_index] = weights[neuron_weight_index] - LEARNING_RATE*error[neuron_index];
             if(weight_index2 && weight_index2 < num_weights){
-                weights[neuron_weight_index2] = weights[neuron_weight_index2] - LEARNING_RATE*error[neuron_index];
+                weights[neuron_weight_index+weight_index2] = weights[neuron_weight_index+weight_index2] - LEARNING_RATE*error[neuron_index];
             }
-        /*calculate the error for the previous layer*/
-        weight_error_reduce[weight_index] = weights[neuron_weight_index]*weight_error_reduce[weight_index];
-        if(weight_index2 && weight_index2 < num_weights){
-            weight_error_reduce[weight_index2] = weights[neuron_weight_index2]*weight_error_reduce[weight_index2];
         }
-        __syncthreads();
+        /*calculate the error for the previous layer*/
+        if(weight_index < NUM_OUTPUT_NEURONS){
+            weight_error_reduce[weight_index] = weights[neuron_weight_index]*weight_error_reduce[weight_index];
+            if(weight_index2 && weight_index2 < num_weights){
+                weight_error_reduce[weight_index2] = weights[neuron_weight_index+weight_index2]*weight_error_reduce[weight_index2];
+            }
+            __syncthreads();
         }
         //need to perform reduction of errors
         for (int s = (NUM_OUTPUT_NEURONS)/2; s > 0; s>>=1){
@@ -162,11 +169,10 @@ backprop_network(int num_threads, int num_layers, int num_weights, int num_neuro
         }
         error[neuron_index] = weight_error_reduce[0];
         /*******************now backprop through the rest of the network**************************/
-        //we already did the outer layer, start at layer-2.
+        //we already did the outer layer, start at num_layer-2.
         for(int layer = num_layers-2; layer >= 0; layer--){
             //recalculate the indexes for each thread
-            neuron_weight_index = (layer)*weights_per_layer + neuron_index*num_weights + weight_index;
-            neuron_weight_index2 = (layer)*weights_per_layer + neuron_index*num_weights + weight_index2;  
+            neuron_weight_index = (layer)*num_weights*num_neurons + neuron_index*num_weights + weight_index; 
             outputs_index = (layer)*num_neurons + neuron_index;
             inputs_index = (layer-1)*num_neurons + neuron_index;
             
@@ -189,14 +195,14 @@ backprop_network(int num_threads, int num_layers, int num_weights, int num_neuro
             //re-adjust weights for the current layer
             weights[neuron_weight_index] = weights[neuron_weight_index] - LEARNING_RATE*error[neuron_index];
             if(weight_index2 && weight_index2 < num_weights){
-                weights[neuron_weight_index2] = weights[neuron_weight_index2] - LEARNING_RATE*error[neuron_index];
+                weights[neuron_weight_index+weight_index2] = weights[neuron_weight_index+weight_index2] - LEARNING_RATE*error[neuron_index];
             }
 
             /*calculate the error for the previous layer*/
             if(layer != 0){
                 weight_error_reduce[weight_index] = weights[neuron_weight_index]*weight_error_reduce[weight_index];
                 if(weight_index2 && weight_index2 < num_weights){
-                    weight_error_reduce[weight_index2] = weights[neuron_weight_index2]*weight_error_reduce[weight_index2];
+                    weight_error_reduce[weight_index2] = weights[neuron_weight_index+weight_index2]*weight_error_reduce[weight_index2];
                 }
                 __syncthreads();
                 //need to perform reduction of errors

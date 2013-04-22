@@ -9,16 +9,14 @@ int main(int argc, char **argv){
     
     uint8_t *images = get_data("train-images.idx3-ubyte");
     uint8_t *labels = get_data("train-labels.idx1-ubyte");
-    //uint8_t *labels = images;
-    int num_layers = 2;
-    
+    //uint8_t *labels = images;    
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
-    int device;
+    int device = 0;
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, device);
     printf("Device %d has compute capability %d.%d.\n", device, deviceProp.major, deviceProp.minor);
-    
+    int num_layers = 2;
     int size_weights = (int)sizeof(float)*MAX_NUM_NEURONS*MAX_NUM_WEIGHTS*num_layers;
     //array to hold EVERY weight value of the network
     float *h_weights = (float*)malloc((size_t)size_weights);    
@@ -36,7 +34,9 @@ int main(int argc, char **argv){
     }
     for(int i = 0; i < MAX_NUM_NEURONS; i++){
         h_input[i] = (((float)images[i]*1.6)/255.0)-0.8;//scale the input data to -0.8 to 0.8
+        //printf("%f", h_input[i]);
     }
+    print_example(0, images, labels);
     for(int i = 0; i < MAX_NUM_NEURONS*MAX_NUM_WEIGHTS*num_layers; i++){
         h_weights[i] = (float)rand()/(float)RAND_MAX;
     }
@@ -92,6 +92,9 @@ int main(int argc, char **argv){
     //set the desired output for the first hand written character to 0.8
     h_desired_output[(int)labels[0]] = 0.8;
     printf("testing with character %i \n", (int)labels[0]);
+    for(int i = 0; i < NUM_OUTPUT_NEURONS; i++){
+           // printf("%f", h_desired_output[i]);
+    }
     
     float *d_desired_output;
     error = cudaMalloc((void**)&d_desired_output, (size_t)size_network_output);
@@ -106,10 +109,10 @@ int main(int argc, char **argv){
     }
     
     if(deviceProp.major == 1){
-        for(int j = 0; j < 20; j ++){
-            //eval_network<<<784, 512>>>(512, num_layers, 784, 784, d_input, d_weights, d_outputs); 
+        for(int j = 0; j < 3; j++) {
+            eval_network<<<784, 512>>>(512, num_layers, 784, 784, d_input, d_weights, d_outputs); 
             cudaDeviceSynchronize();
-            backprop_network<<<784, 512>>>(512, num_layers, 784, 784, d_input, d_outputs, d_desired_output, d_weights); 
+    //        backprop_network<<<784, 400>>>(400, num_layers, 784, 784, d_input, d_outputs, d_desired_output, d_weights); 
             cudaDeviceSynchronize();
             //read back the output values from the layer
             cudaMemcpy(h_weights, d_weights, size_weights, cudaMemcpyDeviceToHost);
@@ -124,7 +127,7 @@ int main(int argc, char **argv){
             }
             for(int i = 0; i < 10; i++){
             //for(int i = (num_layers-1)*MAX_NUM_NEURONS; i < (num_layers-1)*MAX_NUM_NEURONS+NUM_OUTPUT_NEURONS; i++){
-             //   printf("output%i: %f\n" , i-(num_layers-1)*MAX_NUM_NEURONS, h_outputs[i]);
+                printf("output%i: %f\n" , i-(num_layers-1)*MAX_NUM_NEURONS, h_outputs[i]);
            //     printf("output%i: %f\n" , i, h_desired_output[i]);
                 
             }
