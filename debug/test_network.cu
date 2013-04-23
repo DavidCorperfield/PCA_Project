@@ -34,11 +34,15 @@ int main(int argc, char **argv){
     }
     for(int i = 0; i < MAX_NUM_NEURONS; i++){
         h_input[i] = (((float)images[i]*1.6)/255.0)-0.8;//scale the input data to -0.8 to 0.8
-        //printf("%f", h_input[i]);
+        if(h_input[i] > 0)
+            h_input[i] = 0.8;
+        else
+            h_input[i] = -0.8;
+        //printf("%f ", h_input[i]);
     }
     print_example(0, images, labels);
     for(int i = 0; i < MAX_NUM_NEURONS*MAX_NUM_WEIGHTS*num_layers; i++){
-        h_weights[i] = (float)rand()/(float)RAND_MAX;
+        h_weights[i] = (float)(rand()/(float)RAND_MAX/(float)28);
     }
    
     //allocate vectors on the device
@@ -108,11 +112,23 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
     
+    float *d_error_prev;
+    float *h_error_prev = (float*)malloc((size_t)size_input);
+    error = cudaMalloc((void**)&d_error_prev, (size_t)size_input);
+    if (error != cudaSuccess){
+        printf("cudaMalloc d_A returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    
     if(deviceProp.major == 1){
-        for(int j = 0; j < 3; j++) {
-            eval_network<<<784, 512>>>(512, num_layers, 784, 784, d_input, d_weights, d_outputs); 
+        for(int j = 0; j < 100; j++) {
+            eval_layer<<<784, 512>>>(512, 0, 784, 784, d_input, d_weights, d_outputs); 
             cudaDeviceSynchronize();
-    //        backprop_network<<<784, 400>>>(400, num_layers, 784, 784, d_input, d_outputs, d_desired_output, d_weights); 
+            eval_layer<<<784, 512>>>(512, 1, 784, 10, d_input, d_weights, d_outputs); 
+            cudaDeviceSynchronize();
+            backprop_output_layer<<<784, 512>>>(512, num_layers, 784, 784, d_outputs, d_desired_output, d_weights, d_error_prev); 
+            cudaDeviceSynchronize();
+            backprop_layer<<<784, 512>>>(512, 0, 784, 784, d_outputs, d_input, d_weights, d_error_prev); 
             cudaDeviceSynchronize();
             //read back the output values from the layer
             cudaMemcpy(h_weights, d_weights, size_weights, cudaMemcpyDeviceToHost);
@@ -125,8 +141,8 @@ int main(int argc, char **argv){
                 printf("weight%i: %f\n" , i, h_weights[i]);
                 
             }
-            for(int i = 0; i < 10; i++){
-            //for(int i = (num_layers-1)*MAX_NUM_NEURONS; i < (num_layers-1)*MAX_NUM_NEURONS+NUM_OUTPUT_NEURONS; i++){
+            //for(int i = 0; i < 10; i++){
+            for(int i = (num_layers-1)*MAX_NUM_NEURONS; i < (num_layers-1)*MAX_NUM_NEURONS+NUM_OUTPUT_NEURONS; i++){
                 printf("output%i: %f\n" , i-(num_layers-1)*MAX_NUM_NEURONS, h_outputs[i]);
            //     printf("output%i: %f\n" , i, h_desired_output[i]);
                 
