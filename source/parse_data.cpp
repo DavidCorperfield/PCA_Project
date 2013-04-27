@@ -58,7 +58,28 @@ uint8_t * get_data(char *filename){
 		return 0;
 	}
 }
+ 
+void get_norm_image(float *norm_img, uint8_t *images, int img_num){
+    int i,j;
+    int start_index = img_num*MAX_NUM_NEURONS;
+        for (i = 0; i < 28; i++){
+            for (j = 0; j < 28; j++){
+                norm_img[i*28 + j] = (((float)images[start_index + i*28 + j])*1.6)/255.0 - 0.8;//scale the input data to -0.8 to 0.8
+            }
+        }
+}
 
+
+int get_final_output(float *outputs, int size){
+    /*
+    for(int i=0; i < size; i ++){
+        if(outputs[i] > max){
+            final = i;
+            max = outputs[i];
+        }
+    }*/
+}
+            
 void print_example(int img_num, uint8_t *images, uint8_t *labels){
 	int i,j;
 	printf("\nthe character is: %u", labels[img_num]);

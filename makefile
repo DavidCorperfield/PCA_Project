@@ -19,7 +19,7 @@ test_backprop:
 	nvcc $(SOURCE) ./debug/test_backprop.cu -o backprop.o -I $(CUDA_INCLUDE)
 	
 test_network:
-	nvcc -g ./debug/test_network.cu $(SOURCE) -o network.o -I $(CUDA_INCLUDE)
+	nvcc -g ./debug/test_network.cu $(SOURCE) -o network.o -I $(CUDA_INCLUDE) -Xcompiler -fopenmp
 
 headers:
 	gcc $(INCLUDE) -I $(CUDA_INCLUDE)
