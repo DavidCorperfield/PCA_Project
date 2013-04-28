@@ -2,7 +2,7 @@
 #include "../include/feed_forward.h"
 #include "../include/parse_data.h"
 #include <string.h>
-#include <helper_cuda.h>
+#include "../include/helper_cuda.h"
 #include <cuda.h>
 #include <time.h>
 
