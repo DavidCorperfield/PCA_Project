@@ -6,3 +6,4 @@
 __global__ void eval_layer(int num_threads, int layer, int num_weights, int num_neurons, float *input, float *weights, float *output);
 __global__ void eval_last_layer(int num_threads, int layer, int num_weights, int num_neurons, float *weights, float *outputs);
 __global__ void eval_network(int num_threads, int num_layers, int num_weights, int num_neurons, float *input, float *weights, float *outputs);
+__global__ void normalize_inputs(int num_threads, float *input, int size);

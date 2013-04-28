@@ -15,7 +15,7 @@ uint8_t * get_data(char *filename){
 	printf("file to be opened: %s .\n",file_dir);
 	fp = fopen(file_dir,"rb");
 	if(!fp)
-		printf("bad filename\n");
+		printf("could not open file");
 
 	//read first number out of the file
 	uint32_t magic_number = 0;
@@ -58,6 +58,66 @@ uint8_t * get_data(char *filename){
 		return 0;
 	}
 }
+
+float *get_data_f(char *filename){
+	//make sure int is of size 4, otherwise this parser will not work
+	assert(!((int)sizeof(int) - 4));
+	
+	FILE * fp;
+	char * file_dir = (char*)malloc(snprintf(NULL, 0, "%s%s", data_dir, filename) + 1);
+	sprintf(file_dir, "%s%s", data_dir, filename);
+	printf("file to be opened: %s .\n",file_dir);
+	fp = fopen(file_dir,"rb");
+	if(!fp)
+		printf("could not open file");
+
+	//read first number out of the file
+	uint32_t magic_number = 0;
+	fread(&magic_number, sizeof(int), 1, fp);	
+	magic_number = __bswap_32(magic_number); 		
+	
+	//must be a labels file
+	if(magic_number == 2049){
+		int num_items;
+		fread(&num_items, sizeof(int), 1, fp);
+		num_items = __bswap_32(num_items);
+		printf("the number of items in this file is: %i\n", num_items);
+		
+		/*now read the actual data*/
+		float *items = (float*)malloc(num_items*sizeof(float));
+		fread(items, sizeof(uint8_t), num_items, fp);
+		fclose(fp);
+		return items;
+	}
+	//must be a images file
+	else if(magic_number == 2051){
+		int num_images;
+		/*read the header data of the file*/
+		fread(&num_images, sizeof(int), 1, fp);
+		//we already know the next two integers will be 28(dimesions of images)
+		uint32_t temp;
+		fread(&temp, sizeof(int), 2, fp);
+		num_images = __bswap_32(num_images);
+		printf("the number of images in this file is: %i\n", num_images);
+		
+		/*now read the actual data*/
+        uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
+		fread(images, sizeof(uint8_t), num_images*28*28, fp);	
+		float *images_f = (float*)malloc(28*28*num_images*sizeof(float));
+        #pragma omp for
+        for (int i = 0; i < 28*28*num_images; i++){
+            images_f[i] = images[i];
+        }
+		fclose(fp);
+		return images_f;
+	}
+	else{
+		printf("read an invalid magic number\n");
+		fclose(fp);
+		return 0;
+	}
+}
+ 
  
 void get_norm_image(float *norm_img, uint8_t *images, int img_num){
     int i,j;
@@ -70,14 +130,15 @@ void get_norm_image(float *norm_img, uint8_t *images, int img_num){
 }
 
 
-int get_final_output(float *outputs, int size){
-    /*
-    for(int i=0; i < size; i ++){
-        if(outputs[i] > max){
-            final = i;
-            max = outputs[i];
+void get_input_image(float *images, float *input, int img_num){
+    int i,j;
+    int start_index = img_num*MAX_NUM_NEURONS;
+        #pragma omp for
+        for (i = 0; i < 28; i++){
+            for (j = 0; j < 28; j++){
+                input[i*28 + j] = (float)images[start_index + i*28 + j];
+            }
         }
-    }*/
 }
             
 void print_example(int img_num, uint8_t *images, uint8_t *labels){

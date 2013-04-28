@@ -4,17 +4,20 @@
 #include <string.h>
 #include <helper_cuda.h>
 #include <cuda.h>
+#include <time.h>
 
 int main(int argc, char **argv){
-    printf("testing the outer layer using back propagation\n");
-    
     uint8_t *images = get_data("train-images.idx3-ubyte");
     uint8_t *test_images = get_data("t10k-images.idx3-ubyte");
+    float *h_images = get_data_f("train-images.idx3-ubyte");
+    float *h_images1 = get_data_f("train-images.idx3-ubyte");
+    float *h_test_images = get_data_f("t10k-images.idx3-ubyte");
     uint8_t *labels = get_data("train-labels.idx1-ubyte");
     uint8_t *test_labels = get_data("t10k-labels.idx1-ubyte");
     
     //uint8_t *labels = images;    
     int deviceCount;
+    cudaError_t error;
     cudaGetDeviceCount(&deviceCount);
     int device = 0;
     cudaDeviceProp deviceProp;
@@ -33,18 +36,79 @@ int main(int argc, char **argv){
     float *h_input2 = (float*)malloc((size_t)size_input);
     float *h_input3 = (float*)malloc((size_t)size_input);
     
-    if(h_outputs == NULL){
-        printf("unable to create host output pointer");
+    int size_images = size_input*60000;
+    int size_test_images = size_input*10000;
+    
+    clock_t time_normalize = clock();
+    
+    /***********************normalize images********************************************************/
+    float *d_images;
+    //how many images should we normalize at a time? 
+    int num_images = 10000;
+    int steps = size_images/size_input/num_images;
+    int size_step_images = (int)size_input*num_images;
+    size_t free1;  
+    size_t total;  
+    cudaMemGetInfo(&free1, &total);  
+    printf("memory free is %i\n", (int)free1);
+    error = cudaMalloc((void**)&d_images, (size_t)(size_step_images));
+    size_t free2;
+    cudaMemGetInfo(&free2, &total);  
+   // printf("memory used is %i\n", (int)free1-free2);
+    error = cudaMalloc((void**)&d_images, (size_t)(size_step_images));
+   // printf("size allocated was %f\n", (float)size_step_images/4);
+    if (error != cudaSuccess){
+        printf("cudaMalloc returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+        exit(EXIT_FAILURE);
     }
-    /*for(int i = 0; i < MAX_NUM_NEURONS; i++){
-        h_input[i] = (((float)images[i]*1.6)/255.0)-0.8;//scale the input data to -0.8 to 0.8
-        if(h_input[i] > 0)
-            h_input[i] = 0.8;
-        else
-            h_input[i] = -0.8;
-        //printf("%f ", h_input[i]);
-    }*/
-    get_norm_image(h_input, images, 0);
+    //get the amount of free memory on the graphics card  
+
+    for(int i = 0; i < steps; i++){
+        error = cudaMemcpy(d_images, h_images + i*num_images*MAX_NUM_NEURONS, (size_t)size_step_images, cudaMemcpyHostToDevice);
+        if (error != cudaSuccess){
+            printf("cudaMalloc returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        cudaDeviceSynchronize();
+        normalize_inputs<<<1,512>>>(512, d_images, MAX_NUM_NEURONS*num_images);
+        cudaDeviceSynchronize();
+        error = cudaGetLastError();
+        if (error != cudaSuccess){
+            printf("normalize returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+            exit(EXIT_FAILURE);
+        }
+        error = cudaMemcpy(h_images + i*MAX_NUM_NEURONS*num_images, d_images, (size_t)size_step_images, cudaMemcpyDeviceToHost);
+        if (error != cudaSuccess){
+            printf("cudamemcopy returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+            exit(EXIT_FAILURE);
+        }
+    }
+    cudaFree(d_images);
+    
+    //normalize the test inputs
+    float *d_test_images;
+    error = cudaMalloc((void**)&d_test_images, (size_t)(size_test_images));
+    if (error != cudaSuccess){
+        printf("cudaMalloc returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    error = cudaMemcpy(d_test_images, h_test_images, size_test_images, cudaMemcpyHostToDevice);
+    if (error != cudaSuccess){
+        printf("cudaMalloc returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    normalize_inputs<<<1,512>>>(512, d_test_images, MAX_NUM_NEURONS*num_images);
+    
+    error = cudaMemcpy(h_test_images, d_images, size_test_images, cudaMemcpyDeviceToHost);
+    if (error != cudaSuccess){
+        printf("cudamemcopy returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+        exit(EXIT_FAILURE);
+    }
+    cudaFree(d_test_images);
+    /************************************************************************************************/
+    
+    time_normalize = clock() - time_normalize;
+    printf("it took %f seconds to normalize the data\n", time_normalize);
     srand(time(NULL));
     //print_example(0, images, labels);
     for(int i = 0; i < MAX_NUM_NEURONS*MAX_NUM_WEIGHTS*num_layers; i++){
@@ -52,7 +116,6 @@ int main(int argc, char **argv){
     }
    
     //allocate vectors on the device
-    cudaError_t error;
     float *d_weights;
     error = cudaMalloc((void**)&d_weights, size_weights);
      if (error != cudaSuccess){
@@ -126,18 +189,33 @@ int main(int argc, char **argv){
         exit(EXIT_FAILURE);
     }
 
-/*************************************************************************************************************************************/
+/************************************Train the netowork*************************************************************************/
     if(deviceProp.major == 1){
         int epoch; int j;
+        clock_t start = clock();
+        clock_t end = clock();
+        clock_t kernel_time = (clock_t)0;
+        clock_t kernel_start = clock();
+        cudaDeviceSynchronize();
+        for (int test = 0; test < 60000*MAX_NUM_NEURONS; test++){
+            //if(h_images[test] != 2){
+            if(abs(h_images[test] - ((h_images1[test]*1.6)/255.0 -(float)0.8)) > 0.01){//scale the input data to -0.8 to 0.8
+                printf("error at %i\n with h_images = %f and h_images1 = %f and h_images1 unscaled was %f and should be %i\n", test, h_images[test],(h_images1[test]*1.6)/255.0 - (float)0.8, h_images1[test], images[test]);
+                test = 60000*MAX_NUM_NEURONS;
+            }
+        }
+        printf("no error\n");
+        start = clock();
         for(epoch = 0; epoch < 2; epoch++){
             printf("epoch num: %i\n", epoch);
             for(j = 0; j < 60000; j++) {
                // printf("img is %i\n", labels[j]);
                 /******prepare data for next loop*******/
-               get_norm_image(h_input, images, j);
+               get_input_image(h_images, h_input, j);
+               //get_norm_image(h_input, images, j);
                error = cudaMemcpy(d_input, h_input, (size_t)size_input, cudaMemcpyHostToDevice);
                 if (error != cudaSuccess){
-                    printf("cudaMalloc d_A returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+                    printf("cudamemcopy d_A returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
                     exit(EXIT_FAILURE);
                 }
                 //set all character outputs to false, or -0.8
@@ -153,6 +231,7 @@ int main(int argc, char **argv){
                     exit(EXIT_FAILURE);
                 }
                 
+                kernel_start = clock();
                 for(int l = 0; l < num_layers-1; l++){
                     eval_layer<<<784, 512>>>(512, l, 784, 784, d_input, d_weights, d_outputs); 
                     cudaDeviceSynchronize();
@@ -168,17 +247,17 @@ int main(int argc, char **argv){
                     cudaDeviceSynchronize();
 
                 }
-                
+                kernel_time += clock() - kernel_start;
                 //read back the output values from the layer
-                cudaMemcpy(h_weights, d_weights, size_weights, cudaMemcpyDeviceToHost);
+               // cudaMemcpy(h_weights, d_weights, size_weights, cudaMemcpyDeviceToHost);
                 //cudaMemcpy(h_desired_output, d_desired_output, size_network_output, cudaMemcpyDeviceToHost);
-                cudaMemcpy(h_outputs, d_outputs, size_outputs, cudaMemcpyDeviceToHost);  
-                cudaMemcpy(h_error_prev, d_error_prev, size_input, cudaMemcpyDeviceToHost);  
+               // cudaMemcpy(h_outputs, d_outputs, size_outputs, cudaMemcpyDeviceToHost);  
+               // cudaMemcpy(h_error_prev, d_error_prev, size_input, cudaMemcpyDeviceToHost);  
                 error = cudaGetLastError();
                 if(strcmp(cudaGetErrorString(error),"no error"))
-                  //  printf("running eval_network returned error code %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
+                    printf("running eval_network returned error code %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
                 // for(int i = 0; i < 20; i++){
-                for(int i = (num_layers-1)*MAX_NUM_NEURONS*MAX_NUM_WEIGHTS; i <(num_layers-1)*MAX_NUM_NEURONS*MAX_NUM_WEIGHTS+20; i++){
+                /*for(int i = (num_layers-1)*MAX_NUM_NEURONS*MAX_NUM_WEIGHTS; i <(num_layers-1)*MAX_NUM_NEURONS*MAX_NUM_WEIGHTS+20; i++){
                     //printf("weight%i: %f\n" , i, h_weights[i]);
                     
                 }
@@ -191,17 +270,21 @@ int main(int argc, char **argv){
                 for(int i = 0; i < 10; i++){
                     //printf("error%i: %f\n" , i, h_error_prev[i]);
                 //     printf("output%i: %f\n" , i, h_desired_output[i]);
-                    }
+                    }*/
                 
-                }
+            }
         }
-        //test the network
+        end = clock();
+        printf("backprop took %f seconds and spent %f seconds on the gpu\n", (float)(end - start)/(float)CLOCKS_PER_SEC, (float)kernel_time/CLOCKS_PER_SEC);
+        /**********************test the network***********************************************************************************/
         int final_output; int errors = 0;
         float current_max;
-        int test_loops = 100;
-        for(int j=1; j < test_loops; j++){
-            get_norm_image(h_input, test_images, j);
-            //get_norm_image(h_input2, images, j-1);
+        int test_loops = 10000;
+        start = clock();
+        kernel_time = 0;
+        for(int j=0; j < test_loops; j++){
+            get_input_image(h_test_images,h_input, j);
+            //get_norm_image(h_input, test_images, j);
             error = cudaMemcpy(d_input, h_input, size_input, cudaMemcpyHostToDevice);
             if (error != cudaSuccess){
                 printf("cudaMalloc d_A returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
@@ -219,14 +302,15 @@ int main(int argc, char **argv){
                 printf("cudaMalloc d_A returned error %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
                 exit(EXIT_FAILURE);
             }
-
-           for(int l = 0; l < num_layers-1; l++){
+            kernel_start = clock();
+            for(int l = 0; l < num_layers-1; l++){
                     eval_layer<<<784, 512>>>(512, l, 784, 784, d_input, d_weights, d_outputs); 
                     cudaDeviceSynchronize();
                 }
             eval_layer<<<784, 512>>>(512, num_layers-1, 784, 10, d_input, d_weights, d_outputs); 
             cudaDeviceSynchronize();
-           
+            kernel_time += clock() - kernel_start;
+            
             cudaMemcpy(h_outputs, d_outputs, size_outputs, cudaMemcpyDeviceToHost);  
             error = cudaGetLastError();
             //printf("running eval_network returned error code %s, line(%d)\n", cudaGetErrorString(error), __LINE__);
@@ -240,12 +324,13 @@ int main(int argc, char **argv){
             }
             if (final_output != test_labels[j]){
                 errors += 1;
-                printf("output should be: %i      out was: %i\n", test_labels[j], final_output);
+                //printf("output should be: %i      out was: %i\n", test_labels[j], final_output);
             }        
         }
+        end = clock();
+        printf("testing took %f seconds and spent %f seconds on the gpu\n", (float)(end - start)/(float)CLOCKS_PER_SEC, (float)kernel_time/CLOCKS_PER_SEC);
         printf("there were %i errors which makes a percent correct of %f %%\n", errors, 100*(float)(test_loops-errors)/test_loops);                                           
 /*************************************************************************************************************************************/
     }
         return 0;
-        //cudaFree(d_actual_output);cudaFree(d_layer_input);cudaFree(d_desired_output);cudaFree(d_weights);
 }

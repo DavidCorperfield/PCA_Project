@@ -30,7 +30,7 @@ backprop_output_layer(int num_threads, int num_layers, int num_weights, int num_
     int outputs_index = (num_layers-1)*MAX_NUM_NEURONS + neuron_index;
     int outputs_index2 = 0;
     //only used for inner layers
-    __syncthreads();
+   // __syncthreads();
     if(weight_index < num_weights and neuron_index < num_neurons){
         /************Backprop the outer layer of the network*******************/
         if(neuron_index < NUM_OUTPUT_NEURONS and weight_index == 0){
@@ -50,7 +50,7 @@ backprop_output_layer(int num_threads, int num_layers, int num_weights, int num_
             if(weight_index2 && weight_index2 < NUM_OUTPUT_NEURONS){          
                 weight_error_reduce[weight_index2] = error[neuron_index];
             }
-            __syncthreads();
+            //__syncthreads();
             //need to use outputs from the previous layer to calculate weight change amount
             outputs_index = (num_layers-2)*MAX_NUM_NEURONS + weight_index;
             outputs_index2 = (num_layers-2)*MAX_NUM_NEURONS + weight_index2;
@@ -88,7 +88,7 @@ backprop_output_layer(int num_threads, int num_layers, int num_weights, int num_
         if(weight_index == 0){
              error_prev[neuron_index] = weight_error_reduce[0];
         }
-        __syncthreads();
+       // __syncthreads();
         
         if(neuron_index < NUM_OUTPUT_NEURONS){
             //re-adjust weights for the current layer

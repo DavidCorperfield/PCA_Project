@@ -17,7 +17,7 @@ __global__ void eval_layer(int num_threads, int layer, int num_weights, int num_
     __shared__ float output_reduce[SHARED_ARRAY_SIZE]; 
     __syncthreads();
     for (int i = weight_index; i < SHARED_ARRAY_SIZE; i+=num_threads){
-        output_reduce[i]=0;
+        output_reduce[i]=(float)0.0;
     }
     __syncthreads();
     //__shared__ float layer_input[MAX_NUM_WEIGHTS];   
@@ -59,6 +59,21 @@ __global__ void eval_layer(int num_threads, int layer, int num_weights, int num_
             else if(outputs[layer*MAX_NUM_NEURONS + neuron_index] >= (float) 0.8){
                 outputs[layer*MAX_NUM_NEURONS + neuron_index] = (float)0.8;
             }
+        }
+        __syncthreads();
+    }
+}
+
+
+__global__ void normalize_inputs(int num_threads, float *input, int size)
+{
+    int id = threadIdx.x;
+    int index;
+    int iterator = 0;
+    for(iterator = 0; iterator < (int)size/num_threads+1; iterator++){
+        index = id + num_threads*iterator;
+        if(index < size){
+            input[index] = (((float)input[index])*1.6)/255.0 - (float)0.8;//scale the input data to -0.8 to 0.8
         }
         __syncthreads();
     }
