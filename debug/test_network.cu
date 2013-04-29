@@ -6,6 +6,8 @@
 #include <cuda.h>
 #include <time.h>
 
+#define NUM_THREADS (int)512
+
 int main(int argc, char **argv){
     printf("starting the neural network!\n");
     uint8_t *images = get_data("train-images.idx3-ubyte");
@@ -208,7 +210,7 @@ int main(int argc, char **argv){
         }
         printf("no error\n");
         start = clock();
-        for(epoch = 0; epoch < 2; epoch++){
+        for(epoch = 0; epoch < 1; epoch++){
             printf("epoch num: %i\n", epoch);
             for(j = 0; j < 60000; j++) {
                // printf("img is %i\n", labels[j]);
@@ -235,17 +237,17 @@ int main(int argc, char **argv){
                 
                 kernel_start = clock();
                 for(int l = 0; l < num_layers-1; l++){
-                    eval_layer<<<784, 512>>>(512, l, 784, 784, d_input, d_weights, d_outputs); 
+                    eval_layer<<<784, NUM_THREADS>>>(NUM_THREADS, l, 784, 784, d_input, d_weights, d_outputs); 
                     cudaDeviceSynchronize();
                 }
-                eval_layer<<<784, 512>>>(512, num_layers-1, 784, 10, d_input, d_weights, d_outputs); 
+                eval_layer<<<784, NUM_THREADS>>>(NUM_THREADS, num_layers-1, 784, 10, d_input, d_weights, d_outputs); 
                 cudaDeviceSynchronize();
                 
-                backprop_output_layer<<<784, 512>>>(512, num_layers, 784, 784, d_outputs, d_desired_output, d_weights, d_error_prev); 
+                backprop_output_layer<<<784, NUM_THREADS>>>(NUM_THREADS, num_layers, 784, 784, d_outputs, d_desired_output, d_weights, d_error_prev); 
                 cudaDeviceSynchronize();
                 
                 for(int l = num_layers-2; l >= 0; l--){
-                    backprop_layer<<<784, 512>>>(512, l, 784, 784, d_outputs, d_input, d_weights, d_error_prev); 
+                    backprop_layer<<<784, NUM_THREADS>>>(NUM_THREADS, l, 784, 784, d_outputs, d_input, d_weights, d_error_prev); 
                     cudaDeviceSynchronize();
 
                 }
@@ -306,10 +308,10 @@ int main(int argc, char **argv){
             }
             kernel_start = clock();
             for(int l = 0; l < num_layers-1; l++){
-                    eval_layer<<<784, 512>>>(512, l, 784, 784, d_input, d_weights, d_outputs); 
+                    eval_layer<<<784, NUM_THREADS>>>(NUM_THREADS, l, 784, 784, d_input, d_weights, d_outputs); 
                     cudaDeviceSynchronize();
                 }
-            eval_layer<<<784, 512>>>(512, num_layers-1, 784, 10, d_input, d_weights, d_outputs); 
+            eval_layer<<<784, NUM_THREADS>>>(NUM_THREADS, num_layers-1, 784, 10, d_input, d_weights, d_outputs); 
             cudaDeviceSynchronize();
             kernel_time += clock() - kernel_start;
             
@@ -334,6 +336,7 @@ int main(int argc, char **argv){
         printf("there were %i errors which makes a percent correct of %f %%\n", errors, 100*(float)(test_loops-errors)/test_loops);                                           
 /*************************************************************************************************************************************/
     }
-        return 0;
         printf("DONE!");
+        return 0;
+
 }
