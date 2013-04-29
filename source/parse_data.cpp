@@ -103,7 +103,7 @@ float *get_data_f(char *filename){
 		uint32_t temp;
         uint32_t temp2;
 
-        fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
+        //fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
         temp = __bswap_32(temp);
 		num_images = __bswap_32(num_images);
 		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);
