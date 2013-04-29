@@ -6,7 +6,7 @@
 //0 is white 255 is black
 #define blackwhite_threshold 20
 //data directory with respect to the binary
-#define data_dir "/scratch/hpc/colinw/Project/PCA_Project/data/"
+#define data_dir "/scratch/ufhpc/colinw/Project/PCA_Project/data/"
 //#define data_dir "./data/"
 
 
@@ -46,7 +46,7 @@ uint8_t * get_data(char *filename){
 		fread(&num_images, (size_t)sizeof(int), (size_t)1, fp);
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
-        fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
+        //fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
         temp = __bswap_32(num_images);
 		num_images = __bswap_32(num_images);
 		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);
