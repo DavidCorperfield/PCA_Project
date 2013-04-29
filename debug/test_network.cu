@@ -223,7 +223,7 @@ int main(int argc, char **argv){
                     exit(EXIT_FAILURE);
                 }
                 //set all character outputs to false, or -0.8
-                for](int i = 0; i < NUM_OUTPUT_NEURONS; i++){
+                for(int i = 0; i < NUM_OUTPUT_NEURONS; i++){
                     h_desired_output[i] = -0.8;
                 }
                 //set the desired output for the first hand written character to 0.8
