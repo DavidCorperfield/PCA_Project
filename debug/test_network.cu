@@ -208,7 +208,7 @@ int main(int argc, char **argv){
                 test = 60000*MAX_NUM_NEURONS;
             }
         }
-        printf("no error\n");
+        printf("no input data error\n");
         start = clock();
         for(epoch = 0; epoch < 1; epoch++){
             printf("epoch num: %i\n", epoch);
