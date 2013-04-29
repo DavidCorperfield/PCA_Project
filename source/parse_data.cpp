@@ -38,12 +38,13 @@ uint8_t * get_data(char *filename){
 	else if(magic_number == 2051){
 		int num_images;
 		/*read the header data of the file*/
-		fread(&num_images, sizeof(int), (size_t)1, fp);
+		fread(&num_images, (size_t)sizeof(int), (size_t)1, fp);
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
-		fread(&temp, sizeof(int), (size_t)2, fp);
+        fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
+        temp = __bswap_32(num_images);
 		num_images = __bswap_32(num_images);
-		printf("the number of images in this file is: %i and temp vals are %i and %i\n", num_images,temp, temp);
+		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);
 		
 		/*now read the actual data*/
 		uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
@@ -92,13 +93,13 @@ float *get_data_f(char *filename){
 	else if(magic_number == 2051){
 		int num_images;
 		/*read the header data of the file*/
-		fread(&num_images, sizeof(int), 1, fp);
+		fread(&num_images, (size_t)sizeof(int), (size_t)1, fp);
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
-		fread(&temp, sizeof(int), 2, fp);
-		num_images = __bswap_32(num_images);
-		printf("the number of images in this file is: %i\n", num_images);
-		
+        fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
+        //temp = __bswap_32(temp);
+		//num_images = __bswap_32(num_images);
+		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);
 		/*now read the actual data*/
         uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
 		fread(images, sizeof(uint8_t), num_images*28*28, fp);	
