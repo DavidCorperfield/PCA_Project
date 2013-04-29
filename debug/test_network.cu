@@ -210,7 +210,7 @@ int main(int argc, char **argv){
         }
         printf("no input data error\n");
         start = clock();
-        for(epoch = 0; epoch < 1; epoch++){
+        for(epoch = 0; epoch < 2; epoch++){
             printf("epoch num: %i\n", epoch);
             for(j = 0; j < 60000; j++) {
                // printf("img is %i\n", labels[j]);
