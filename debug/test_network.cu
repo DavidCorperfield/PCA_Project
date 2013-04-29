@@ -8,8 +8,8 @@
 
 int main(int argc, char **argv){
     printf("starting the neural network!\n");
-    uint8_t *images = get_data("train-images.idx3-ubyte");
-    uint8_t *test_images = get_data("t10k-images.idx3-ubyte");
+    //uint8_t *images = get_data("train-images.idx3-ubyte");
+    //uint8_t *test_images = get_data("t10k-images.idx3-ubyte");
     float *h_images = get_data_f("train-images.idx3-ubyte");
     float *h_images1 = get_data_f("train-images.idx3-ubyte");
     float *h_test_images = get_data_f("t10k-images.idx3-ubyte");
