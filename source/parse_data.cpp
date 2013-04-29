@@ -44,7 +44,7 @@ uint8_t * get_data(char *filename){
 		uint32_t temp;
 		fread(&temp, sizeof(int), 2, fp);
 		num_images = __bswap_32(num_images);
-		printf("the number of images in this file is: %i\n", num_images);
+		printf("the number of images in this file is: %i and temp vals are %i and %i\n", num_images,temp, temp);
 		
 		/*now read the actual data*/
 		uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
@@ -104,7 +104,6 @@ float *get_data_f(char *filename){
         uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
 		fread(images, sizeof(uint8_t), num_images*28*28, fp);	
 		float *images_f = (float*)malloc(28*28*num_images*sizeof(float));
-        #pragma omp for
         for (int i = 0; i < 28*28*num_images; i++){
             images_f[i] = images[i];
         }
