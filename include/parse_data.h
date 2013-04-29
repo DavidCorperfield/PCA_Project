@@ -6,8 +6,8 @@
 #include <cuda.h>
 
 //data directory with respect to the binary
-//#define data_dir "/scratch/hpc/colinw/PCA_Project/data/"
-#define data_dir "./data/"
+#define data_dir "/scratch/hpc/colinw/PCA_Project/data/"
+//#define data_dir "./data/"
 
 #define MAX_NUM_WEIGHTS (int)784
 #define MAX_NUM_NEURONS (int)784
