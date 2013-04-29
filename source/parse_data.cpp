@@ -21,7 +21,6 @@ uint8_t * get_data(char *filename){
 	uint32_t magic_number = 0;
 	fread(&magic_number, sizeof(int), 1, fp);	
 	magic_number = __bswap_32(magic_number); 		
-	
 	//must be a labels file
 	if(magic_number == 2049){
 		int num_items;
@@ -42,7 +41,7 @@ uint8_t * get_data(char *filename){
 		fread(&num_images, sizeof(int), 1, fp);
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
-		fread(&temp, sizeof(int), 2, fp);
+		//fread(&temp, sizeof(int), 2, fp);
 		num_images = __bswap_32(num_images);
 		printf("the number of images in this file is: %i and temp vals are %i and %i\n", num_images,temp, temp);
 		
