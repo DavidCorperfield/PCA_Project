@@ -6,7 +6,7 @@
 #include <cuda.h>
 #include <time.h>
 
-#define NUM_THREADS (int)512
+#define NUM_THREADS (int)784
 
 int main(int argc, char **argv){
     printf("starting the neural network!\n");
