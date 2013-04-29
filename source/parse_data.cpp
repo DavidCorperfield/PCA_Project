@@ -73,7 +73,7 @@ float *get_data_f(char *filename){
 
 	//read first number out of the file
 	uint32_t magic_number = 0;
-	fread(&magic_number, sizeof(int), 1, fp);	
+	fread(&magic_number, (size_t)sizeof(int), (size_t)1, fp);	
 	magic_number = __bswap_32(magic_number); 		
 	
 	//must be a labels file
@@ -97,8 +97,8 @@ float *get_data_f(char *filename){
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
         fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
-        //temp = __bswap_32(temp);
-		//num_images = __bswap_32(num_images);
+        temp = __bswap_32(temp);
+		num_images = __bswap_32(num_images);
 		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);
 		/*now read the actual data*/
         uint8_t *images = (uint8_t*)malloc(28*28*num_images*sizeof(uint8_t));
