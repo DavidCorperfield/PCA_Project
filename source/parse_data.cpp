@@ -1,5 +1,6 @@
 #include "../include/parse_data.h"
 #include <byteswap.h>
+#include <time.h>
 
 //num from 0-255 for thresholding black and white in the print_example
 //0 is white 255 is black
@@ -96,7 +97,9 @@ float *get_data_f(char *filename){
 		fread(&num_images, (size_t)sizeof(int), (size_t)1, fp);
 		//we already know the next two integers will be 28(dimesions of images)
 		uint32_t temp;
-        //fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
+        uint32_t temp2;
+
+        fread(&temp, (size_t)sizeof(int), (size_t)2, fp);
         temp = __bswap_32(temp);
 		num_images = __bswap_32(num_images);
 		printf("the number of images in this file is: %i and dimensions are %i and %i\n", num_images,temp, temp);

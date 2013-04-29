@@ -192,7 +192,7 @@ int main(int argc, char **argv){
 
 /************************************Train the netowork*************************************************************************/
     printf("about to train the network\n");
-    if(deviceProp.major == 1){
+    if(deviceProp.major){
         int epoch; int j;
         clock_t start = clock();
         clock_t end = clock();
@@ -335,4 +335,5 @@ int main(int argc, char **argv){
 /*************************************************************************************************************************************/
     }
         return 0;
+        printf("DONE!");
 }
