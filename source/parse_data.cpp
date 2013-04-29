@@ -7,6 +7,8 @@
 #define blackwhite_threshold 20
 //data directory with respect to the binary
 #define data_dir "/scratch/hpc/colinw/Project/PCA_Project/data/"
+//#define data_dir "./data/"
+
 
 uint8_t * get_data(char *filename){
 	//make sure int is of size 4, otherwise this parser will not work
