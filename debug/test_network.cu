@@ -7,6 +7,7 @@
 #include <time.h>
 
 int main(int argc, char **argv){
+    printf("starting the neural network!\n");
     uint8_t *images = get_data("train-images.idx3-ubyte");
     uint8_t *test_images = get_data("t10k-images.idx3-ubyte");
     float *h_images = get_data_f("train-images.idx3-ubyte");
@@ -40,7 +41,7 @@ int main(int argc, char **argv){
     int size_test_images = size_input*10000;
     
     clock_t time_normalize = clock();
-    
+    printf("about to normalize the images\n");
     /***********************normalize images********************************************************/
     float *d_images;
     //how many images should we normalize at a time? 
@@ -190,6 +191,7 @@ int main(int argc, char **argv){
     }
 
 /************************************Train the netowork*************************************************************************/
+    printf("about to train the network\n");
     if(deviceProp.major == 1){
         int epoch; int j;
         clock_t start = clock();
